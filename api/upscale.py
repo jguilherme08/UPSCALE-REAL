@@ -1,7 +1,6 @@
 import base64
 import io
 import json
-import sys
 from PIL import Image
 import numpy as np
 import onnxruntime as ort
@@ -9,8 +8,10 @@ import onnxruntime as ort
 
 def handler(request):
     """
-    Handler function para Vercel Serverless Python.
-    Processa upscaling de imagem usando ONNX Runtime.
+    Serverless handler para Vercel
+    POST /api/upscale
+    Body: {"image": "base64_string", "scale": 2 ou 4}
+    Response: {"image": "base64_string_upscaled"}
     """
     if request.method != "POST":
         return {
@@ -20,7 +21,6 @@ def handler(request):
         }
 
     try:
-        # Parsear JSON do request
         body = request.get_json() if hasattr(request, 'get_json') else json.loads(request.body)
         image_base64 = body.get("image")
         scale = int(body.get("scale", 2))
@@ -52,10 +52,7 @@ def handler(request):
         model_path = f"python/RealESRGAN_x{scale}plus.onnx"
 
         # Executar inference com ONNX Runtime
-        session = ort.InferenceSession(
-            model_path,
-            providers=["CPUExecutionProvider"]
-        )
+        session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
         input_name = session.get_inputs()[0].name
         output = session.run(None, {input_name: img_np})[0]
 

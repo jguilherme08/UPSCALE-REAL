@@ -1,9 +1,13 @@
 {
+  "version": 2,
   "functions": {
-    "api/*.py": {
+    "api/upscale.py": {
       "runtime": "python3.10",
-      "maxDuration": 60,
+      "maxDuration": 120,
       "memory": 3008
     }
+  },
+  "env": {
+    "PYTHONPATH": "."
   }
 }
