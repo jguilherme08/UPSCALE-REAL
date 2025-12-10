@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(circle at 10% 20%, rgba(79, 209, 197, 0.12), transparent 25%),
+    radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.16), transparent 30%),
+    #0f1117;
+}
+
+.btn-primary {
+  @apply rounded-full px-5 py-2 font-medium bg-accent text-slate-900 hover:brightness-110 transition;
+}
+
+.card {
+  @apply bg-panel/80 border border-white/5 rounded-2xl p-6 shadow-card backdrop-blur;
+}
+
+.input-area {
+  @apply border border-dashed border-white/10 rounded-xl p-6 text-center hover:border-accent/60 transition cursor-pointer bg-white/5;
+}
