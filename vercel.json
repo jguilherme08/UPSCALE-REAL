@@ -6,6 +6,7 @@
     }
   },
   "env": {
-    "PYTHONPATH": "python/.venv"
+    "PYTHONPATH": "python/.venv",
+    "PYTHON_BIN": "python3.9"
   }
 }
