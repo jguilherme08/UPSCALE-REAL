@@ -7,13 +7,14 @@ from typing import Tuple
 
 import cv2
 import numpy as np
-import onnxruntime as ort
+import torch
+from basicsr.archs.rrdbnet_arch import RRDBNet
 from PIL import Image
+from realesrgan import RealESRGANer
 
 MAX_DIMENSION = 4096
-MAX_OUTPUT = 8192  # guard scaled size to fit serverless RAM/time
+MAX_OUTPUT = 8192
 DEFAULT_TILE = 256
-OVERLAP = 16
 
 os.environ.setdefault('OMP_NUM_THREADS', '1')
 os.environ.setdefault('OMP_WAIT_POLICY', 'PASSIVE')
@@ -39,18 +40,22 @@ def load_image(path: str, scale: int) -> Image.Image:
   return image
 
 
-def pick_model(scale: str) -> str:
+def pick_model(scale: str) -> Tuple[str, RRDBNet]:
   base_dir = os.path.dirname(os.path.abspath(__file__))
   models_dir = os.path.join(base_dir, 'models')
+  
   if scale == '4':
-    candidate = os.path.join(models_dir, 'RealESRGAN_x4plus.onnx')
+    model_path = os.path.join(models_dir, 'RealESRGAN_x4plus.pth')
+    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
   else:
-    candidate = os.path.join(models_dir, 'RealESRGAN_x2plus.onnx')
-  if not os.path.exists(candidate):
+    model_path = os.path.join(models_dir, 'RealESRGAN_x2plus.pth')
+    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
+  
+  if not os.path.exists(model_path):
     raise FileNotFoundError(
-      f'Modelo ONNX não encontrado em {candidate}. Baixe RealESRGAN_x2plus.onnx ou x4plus.onnx e coloque em python/models.'
+      f'Modelo não encontrado em {model_path}. Baixe RealESRGAN_x2plus.pth ou x4plus.pth e coloque em python/models.'
     )
-  return candidate
+  return model_path, model
 
 
 def to_numpy(image: Image.Image) -> np.ndarray:
@@ -58,34 +63,9 @@ def to_numpy(image: Image.Image) -> np.ndarray:
   return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
 
 
-def run_session(session: ort.InferenceSession, tile: np.ndarray) -> np.ndarray:
-  inp = tile.astype(np.float32) / 255.0
-  inp = np.transpose(inp, (2, 0, 1))[None, ...]
-  ort_inputs = {session.get_inputs()[0].name: inp}
-  output = session.run(None, ort_inputs)[0]
-  # output shape: (1, 3, H*scale, W*scale)
-  return output[0].transpose(1, 2, 0)
-
-
-def upscale_tiled(img: np.ndarray, session: ort.InferenceSession, scale: int, tile: int) -> np.ndarray:
-  h, w, _ = img.shape
-  step = max(tile - OVERLAP, 32)
-  out = np.zeros((h * scale, w * scale, 3), dtype=np.float32)
-  weight = np.zeros_like(out)
-
-  for y in range(0, h, step):
-    for x in range(0, w, step):
-      tile_patch = img[y : min(y + tile, h), x : min(x + tile, w), :]
-      out_tile = run_session(session, tile_patch)
-      oh, ow, _ = out_tile.shape
-      oy, ox = y * scale, x * scale
-      out[oy : oy + oh, ox : ox + ow] += out_tile
-      weight[oy : oy + oh, ox : ox + ow] += 1.0
-
-  weight[weight == 0] = 1.0
-  merged = out / weight
-  merged = np.clip(merged * 255.0, 0, 255).astype(np.uint8)
-  return cv2.cvtColor(merged, cv2.COLOR_BGR2RGB)
+def upscale_image(img: np.ndarray, upsampler: RealESRGANer) -> np.ndarray:
+  output, _ = upsampler.enhance(img, outscale=upsampler.scale)
+  return cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
 
 
 def encode_base64(image: np.ndarray) -> str:
@@ -100,15 +80,21 @@ def main():
   scale_int = int(args.scale)
   image = load_image(args.input, scale_int)
 
-  model_path = pick_model(args.scale)
-  opts = ort.SessionOptions()
-  opts.intra_op_num_threads = 1
-  opts.inter_op_num_threads = 1
-  opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
-  session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'], sess_options=opts)
-
+  model_path, model = pick_model(args.scale)
+  
+  upsampler = RealESRGANer(
+    scale=scale_int,
+    model_path=model_path,
+    model=model,
+    tile=args.tile,
+    tile_pad=10,
+    pre_pad=0,
+    half=False,  # CPU mode
+    device='cpu'
+  )
+  
   np_img = to_numpy(image)
-  upscaled = upscale_tiled(np_img, session, scale_int, args.tile)
+  upscaled = upscale_image(np_img, upsampler)
   print(encode_base64(upscaled))
 
 
