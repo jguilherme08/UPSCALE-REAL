@@ -7,11 +7,11 @@ const https = require('https');
 const MODELS = [
   {
     name: 'RealESRGAN_x2plus.onnx',
-    url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x2plus.onnx'
+    url: 'https://huggingface.co/datasets/jinaai/real-esrgan-models/resolve/main/RealESRGAN_x2plus.onnx'
   },
   {
     name: 'RealESRGAN_x4plus.onnx',
-    url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x4plus.onnx'
+    url: 'https://huggingface.co/datasets/jinaai/real-esrgan-models/resolve/main/RealESRGAN_x4plus.onnx'
   }
 ];
 
