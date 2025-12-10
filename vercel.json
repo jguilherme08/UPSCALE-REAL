@@ -1,11 +1,9 @@
 {
   "functions": {
-    "app/api/upscale/route.ts": {
-      "maxDuration": 15,
-      "memory": 1024
+    "api/*.py": {
+      "runtime": "python3.10",
+      "maxDuration": 60,
+      "memory": 3008
     }
-  },
-  "env": {
-    "PYTHONPATH": "python/.venv"
   }
 }

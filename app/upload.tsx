@@ -51,11 +51,28 @@ export default function UpscaleClient() {
     setIsLoading(true);
     setError(null);
     try {
-      const form = new FormData();
-      form.append('image', file);
-      form.append('scale', String(scale));
+      // Converter arquivo para base64
+      const base64Image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Extrair apenas a parte base64 (remover data:image/...;base64,)
+          const base64Part = result.split(',')[1];
+          resolve(base64Part);
+        };
+        reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+        reader.readAsDataURL(file);
+      });
 
-      const res = await fetch('/api/upscale', { method: 'POST', body: form });
+      const res = await fetch('/api/upscale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64Image,
+          scale: String(scale)
+        })
+      });
+
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || 'Erro ao processar imagem');
