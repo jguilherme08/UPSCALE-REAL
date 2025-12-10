@@ -25,10 +25,12 @@ type PythonResult = {
 
 async function runPython(scriptPath: string, inputPath: string, scale: string): Promise<PythonResult> {
   return new Promise((resolve, reject) => {
-    const pythonBin = process.env.PYTHON || process.env.PYTHON_BIN || 'python3';
+    // Vercel uses /usr/bin/python3 in serverless functions
+    const pythonBin = '/usr/bin/python3';
     const env = {
       ...process.env,
-      PYTHONPATH: path.join(process.cwd(), 'python', '.venv')
+      PYTHONPATH: path.join(process.cwd(), 'python', '.venv'),
+      PYTHONUNBUFFERED: '1'
     };
 
     const child = spawn(pythonBin, [scriptPath, '--input', inputPath, '--scale', scale], { env });
