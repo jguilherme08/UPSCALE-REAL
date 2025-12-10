@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run fetch:models && next build",
     "start": "next start",
     "lint": "next lint",
     "prepare:python": "python -m pip install -r python/requirements.txt --target python/.venv || echo \"python deps install skipped\"",
-    "postinstall": "npm run prepare:python"
+    "postinstall": "npm run prepare:python",
+    "fetch:models": "node scripts/fetch-models.js"
   },
   "dependencies": {
     "autoprefixer": "10.4.20",

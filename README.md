@@ -17,9 +17,9 @@ Next.js 14 + Tailwind frontend with a Python (Real-ESRGAN ONNX) backend designed
    ```powershell
    python -m pip install -r python/requirements.txt
    ```
-3. Place the Real-ESRGAN models:
-   - Download `RealESRGAN_x2plus.onnx` and/or `RealESRGAN_x4plus.onnx`.
-   - Put them in `python/models/` (create the folder if needed).
+3. Model download:
+   - Já há um script: `npm run fetch:models` (usado automaticamente no `npm run build`) que baixa `RealESRGAN_x2plus.onnx` e `RealESRGAN_x4plus.onnx` para `python/models/` se não existirem.
+   - Se preferir baixar manualmente, coloque os arquivos em `python/models/`.
 
 ## Run locally
 ```powershell
